@@ -1,6 +1,6 @@
 #include "Tasks.h"
 
-void taskASend(msgQueue& queue)
+void ProcessA::taskASend(msgQueue& queue)
 {
     std::random_device rd;
     std::mt19937 mt(rd());
@@ -17,7 +17,7 @@ void taskASend(msgQueue& queue)
     }
 }
 
-void taskAReceive(msgQueue& queue)
+void ProcessA::taskAReceive(msgQueue& queue)
 {
     while(1)
     {
@@ -26,35 +26,31 @@ void taskAReceive(msgQueue& queue)
     }
 }
 
-void runProcessA(msgQueue& queue)
+void ProcessA::runProcessA(msgQueue& queue)
 {
-    std::thread t1(taskASend, std::ref(queue));
-    std::thread t2(taskAReceive, std::ref(queue));
+    std::thread t1(&ProcessA::taskASend, this, std::ref(queue));
+    std::thread t2(&ProcessA::taskAReceive, this, std::ref(queue));
 
     t1.join();
     t2.join();
 }
 
 
-bool isTaskDone = false;
-std::mutex mtx;
-std::condition_variable cv;
-
-void taskBSend(msgQueue& queue)
+void ProcessB::taskBSend(msgQueue& queue)
 {
     while(1)
     {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, []{ return isTaskDone;});
+        std::unique_lock<std::mutex> lock(_mtx);
+        _cv.wait(lock, [this]{return getTaskDone();});
 
         //send ACK (type 2) and dummy
         Message msg = {.type = 2, .number = 0};
         queue.send(msg);
-        isTaskDone = false;
+        setTaskDone(false);
     }
 }
 
-void taskBReceive(msgQueue& queue)
+void ProcessB::taskBReceive(msgQueue& queue)
 {
     while(1)
     {
@@ -62,15 +58,15 @@ void taskBReceive(msgQueue& queue)
         Message msg = queue.receive(1);
         sum += msg.number;
         std::cout << "Current sum is: " << sum << std::endl;
-        isTaskDone = true;
-        cv.notify_one();
+        setTaskDone(true);
+        _cv.notify_one();
     }
 }
 
-void runProcessB(msgQueue& queue)
+void ProcessB::runProcessB(msgQueue& queue)
 {
-    std::thread t1(taskBReceive, std::ref(queue));
-    std::thread t2(taskBSend, std::ref(queue));
+    std::thread t1(&ProcessB::taskBReceive, this, std::ref(queue));
+    std::thread t2(&ProcessB::taskBSend, this, std::ref(queue));
 
     t1.join();
     t2.join();
