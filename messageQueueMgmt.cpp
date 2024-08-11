@@ -2,28 +2,27 @@
 
 void msgQueue::send(Message& message)
 {
-    std::lock_guard<std::mutex> lock(_writemtx);
     if (-1 != msgsnd(_msgid, &message, sizeof(message), 0))
     {
         std::cout << "Message:" << message.number << " sent" << std::endl;
     }
     else
     {
-        std::cerr << "Failed to send message" << std::endl;
+        throw std::runtime_error("Failed to send message"); 
     }
 }
 
 Message msgQueue::receive(long type)
 {
     Message message;
-    std::lock_guard<std::mutex> lock(_readmtx);
+
     if (-1 != msgrcv(_msgid, &message, sizeof(message), type, 0))
     {
         std::cout << "Message received:" << message.number << std::endl;
     }
     else
     {
-        std::cout << "Failed to receive" << std::endl;
+        throw std::runtime_error("Failed to receive message"); 
     }
 
     return message;
