@@ -76,6 +76,7 @@ public:
 
     /**
      * @brief Set the isTaskDone member to val.
+     * It's used to notify ACK sending task.
      * 
      * @param val Bool value to set isTaskDone to it.
      */

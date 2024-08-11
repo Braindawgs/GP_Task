@@ -15,7 +15,7 @@ pid_t pid = -1;
 /**
  * @brief Signal handler, for gracefull shutdown with Ctrl+C
  * 
- * @param sig 
+ * @param sig Triggered signal
  */
 void signalHandler(int sig)
 {
@@ -23,12 +23,13 @@ void signalHandler(int sig)
 
     if (procA)
     {
-        std::cout << "Cleaning tasks" << std::endl;
+        std::cout << "Cleaning task: A" << std::endl;
         procA->setTerminationFlag();
     }
 
     if (procB)
     {
+        std::cout << "Cleaning task: B" << std::endl;
         procB->setTerminationFlag();
         procB->notifyAll();
     }
@@ -41,6 +42,15 @@ void signalHandler(int sig)
         kill(pid, SIGTERM);
         int status;
         waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status)) 
+        {
+            std::cout << "Child process exited with: " << WEXITSTATUS(status) << std::endl;
+        } 
+        else if (WIFSIGNALED(status)) 
+        {
+            std::cout << "Child process was terminated by signal: " << WTERMSIG(status) << std::endl;
+        }
 
         if (messageQueue)
         {
@@ -59,13 +69,14 @@ int main()
     signal(SIGINT, signalHandler);
 
     pid = fork();
-    messageQueue = std::make_shared<msgQueue>();
 
     if (0 > pid)
     {
         std::cerr << "Fork failed" << std::endl;
         return -1;
     }
+
+    messageQueue = std::make_shared<msgQueue>();
 
     if (0 == pid)
     {
