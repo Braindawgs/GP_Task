@@ -6,23 +6,39 @@ void ProcessA::taskASend(msgQueue& queue)
     std::mt19937 mt(rd());
     std::uniform_int_distribution<int> distInt(1, 100);
 
-    while(1)
+    while(!terminationFlag)
     {
-        int random = distInt(mt);
-        Message msg = {.type = 1, .number = random};
+        try
+        {      
+            int random = distInt(mt);
+            Message msg = {.type = 1, .number = random};
 
-        queue.send(msg);
-        
-        std::this_thread::sleep_for(std::chrono::seconds(4));
+            queue.send(msg);
+            
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            break;
+        }
     }
 }
 
 void ProcessA::taskAReceive(msgQueue& queue)
 {
-    while(1)
+    while(!terminationFlag)
     {
-        Message msg = queue.receive(2);
-        std::cout << "Ack(" << msg.type << ")" << std::endl;
+        try
+        {
+            Message msg = queue.receive(2);
+            std::cout << "Ack(" << msg.type << ")" << std::endl;
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            break;
+        }
     }
 }
 
@@ -38,29 +54,57 @@ void ProcessA::runProcessA(msgQueue& queue)
 
 void ProcessB::taskBSend(msgQueue& queue)
 {
-    while(1)
+    while(!terminationFlag)
     {
-        std::unique_lock<std::mutex> lock(_mtx);
-        _cv.wait(lock, [this]{return getTaskDone();});
+        try
+        {
+            std::unique_lock<std::mutex> lock(_mtx);
+            _cv.wait(lock, [this]{return getTaskDone() || terminationFlag;});
 
-        //send ACK (type 2) and dummy
-        Message msg = {.type = 2, .number = 0};
-        queue.send(msg);
-        setTaskDone(false);
+            if (terminationFlag)
+            {
+                break;
+            }
+
+            //send ACK (type 2) and dummy
+            Message msg = {.type = 2, .number = 0};
+            queue.send(msg);
+            setTaskDone(false);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            break;
+        }
     }
 }
 
 void ProcessB::taskBReceive(msgQueue& queue)
 {
-    while(1)
+    while(!terminationFlag)
     {
-        static int sum = 0;
-        Message msg = queue.receive(1);
-        sum += msg.number;
-        std::cout << "Current sum is: " << sum << std::endl;
-        setTaskDone(true);
-        _cv.notify_one();
+        //std::this_thread::sleep_for(std::chrono::seconds(5));
+        try
+        {
+            static int sum = 0;
+            Message msg = queue.receive(1);
+            sum += msg.number;
+            std::cout << "Current sum is: " << sum << std::endl;
+            setTaskDone(true);
+            _cv.notify_one();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            break;
+        }
     }
+}
+
+void ProcessB::notifyAll() 
+{
+    std::unique_lock<std::mutex> lock(_mtx);
+    _cv.notify_all();
 }
 
 void ProcessB::runProcessB(msgQueue& queue)

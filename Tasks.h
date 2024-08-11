@@ -8,6 +8,7 @@
 #include <random>
 #include <chrono>
 #include <semaphore>
+#include <atomic>
 #include <condition_variable>
 
 /**
@@ -18,12 +19,22 @@ class ProcessA
 {
 public:
     
+    ~ProcessA()
+    {
+        setTerminationFlag();
+    }
+
     /**
      * @brief Creates 2 threads for both `taskASend` and `taskAReceive` methods.
      * 
      * @param queue Message queue for IPC.
      */
     void runProcessA(msgQueue& queue);
+
+    void setTerminationFlag()
+    {
+        terminationFlag = true;
+    }
 
 private:
     /**
@@ -39,6 +50,8 @@ private:
      * @param queue Message queue for IPC.
      */
     void taskAReceive(msgQueue& queue);
+
+    std::atomic<bool> terminationFlag = false;
 };
 
 /**
@@ -48,6 +61,12 @@ private:
 class ProcessB
 {
 public:
+
+    ~ProcessB()
+    {
+        setTerminationFlag();
+    }
+
     /**
      * @brief Creates 2 threads for both `taskBSend` and `taskBReceive` methods.
      * 
@@ -75,6 +94,13 @@ public:
         return isTaskDone;
     }
 
+    void setTerminationFlag()
+    {
+        terminationFlag = true;
+    }
+
+    void notifyAll();
+
 private:
     /**
      * @brief Receives random number from ProcessA and sums them.
@@ -93,4 +119,5 @@ private:
     bool isTaskDone = false;
     std::mutex _mtx;
     std::condition_variable _cv;
+    std::atomic<bool> terminationFlag = false;
 };
