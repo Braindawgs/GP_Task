@@ -30,8 +30,9 @@ public:
      */
     msgQueue() 
     {
-        system("touch GPqueue.txt");
-        _key = ftok("GPqueue.txt", 65);
+        std::string cmd = "touch " + _queueName;
+        system(cmd.c_str());
+        _key = ftok(_queueName.c_str(), 65);
         _msgid = msgget(_key, 0666 | IPC_CREAT);
 
         if ((-1 == _key) || (-1 == _msgid))
@@ -70,4 +71,6 @@ private:
 
     key_t _key;
     int _msgid;
+
+    std::string const _queueName = "GPqueue.txt";
 };

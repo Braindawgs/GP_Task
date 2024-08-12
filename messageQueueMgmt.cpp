@@ -1,10 +1,13 @@
 #include "messageQueueMgmt.h"
 
+#include <filesystem>
+
 void msgQueue::send(Message& message)
 {
     if (-1 != msgsnd(_msgid, &message, sizeof(message), 0))
     {
-        std::cout << "Message:" << message.number << " sent" << std::endl;
+        //Debug info
+        //std::cout << "Message:" << message.number << " sent" << std::endl;
     }
     else
     {
@@ -18,7 +21,8 @@ Message msgQueue::receive(long type)
 
     if (-1 != msgrcv(_msgid, &message, sizeof(message), type, 0))
     {
-        std::cout << "Message received:" << message.number << std::endl;
+        //Debug info
+        //std::cout << "Message received:" << message.number << std::endl;
     }
     else
     {
@@ -31,5 +35,9 @@ Message msgQueue::receive(long type)
 void msgQueue::destroyQueue()
 {
     msgctl(_msgid, IPC_RMID, NULL); 
-    system("rm GPqueue.txt");
+
+    if (std::filesystem::exists(_queueName))
+    {
+        std::filesystem::remove(_queueName);
+    }
 }
