@@ -13,9 +13,10 @@ void ProcessA::taskASend(msgQueue& queue)
             int random = distInt(mt);
             Message msg = {.type = 1, .number = random};
 
+            std::cout << "Random number is:" << random << std::endl;
             queue.send(msg);
             
-            std::this_thread::sleep_for(std::chrono::seconds(2));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         catch(const std::exception& e)
         {
