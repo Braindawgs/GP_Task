@@ -23,13 +23,11 @@ void signalHandler(int sig)
 
     if (procA)
     {
-        std::cout << "Cleaning task: A" << std::endl;
         procA->setTerminationFlag();
     }
 
     if (procB)
     {
-        std::cout << "Cleaning task: B" << std::endl;
         procB->setTerminationFlag();
         procB->notifyAll();
     }
@@ -76,20 +74,67 @@ int main()
         return -1;
     }
 
-    messageQueue = std::make_shared<msgQueue>();
+    try
+    {
+        messageQueue = std::make_shared<msgQueue>();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Memory queue allocation failed with:" << e.what() << std::endl;
+        return -1;
+    }
+    
 
     if (0 == pid)
     {
-        sleep(1); // Just so parent process can go first
-        procB = std::make_shared<ProcessB>();
-        procB->runProcessB(*messageQueue);
+        // Child process
+        try
+        {
+            // Sleep, just for the parent process to execute first.
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            procB = std::make_shared<ProcessB>();
+            procB->runProcessB(*messageQueue);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            exit(-1);
+        }
     }
     else
     {
-        procA = std::make_shared<ProcessA>();
-        procA->runProcessA(*messageQueue);
+        // Parent process
+        try
+        {
+            procA = std::make_shared<ProcessA>();
+            procA->runProcessA(*messageQueue);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            kill(pid, SIGTERM);
+            waitpid(pid, nullptr, 0);
+            if (messageQueue) 
+            {
+                messageQueue->destroyQueue();
+            }
+
+            return -1;
+        }
     }
 
+    std::cout << "Press Enter to terminate..." << std::endl;
+    std::cin.get(); 
+    if (pid > 0)
+    {
+        //Graceful shutdown if Ctrl+C is not used
+        kill(pid, SIGTERM);
+        waitpid(pid, nullptr, 0);
+        if (messageQueue) 
+        {
+            messageQueue->destroyQueue();
+        }
+    }
     return 0;
 }
 
