@@ -44,11 +44,8 @@ void ProcessA::taskAReceive(msgQueue& queue)
 
 void ProcessA::runProcessA(msgQueue& queue)
 {
-    std::thread t1(&ProcessA::taskASend, this, std::ref(queue));
-    std::thread t2(&ProcessA::taskAReceive, this, std::ref(queue));
-
-    t1.join();
-    t2.join();
+    t1 = std::thread(&ProcessA::taskASend, this, std::ref(queue));
+    t2 = std::thread(&ProcessA::taskAReceive, this, std::ref(queue));
 }
 
 
@@ -60,12 +57,7 @@ void ProcessB::taskBSend(msgQueue& queue)
         {
             std::unique_lock<std::mutex> lock(_mtx);
             _cv.wait(lock, [this]{return getTaskDone() || terminationFlag;});
-
-            if (terminationFlag)
-            {
-                break;
-            }
-
+            
             //send ACK (type 2) and dummy
             Message msg = {.type = 2, .number = 0};
             queue.send(msg);
@@ -83,7 +75,6 @@ void ProcessB::taskBReceive(msgQueue& queue)
 {
     while(!terminationFlag)
     {
-        //std::this_thread::sleep_for(std::chrono::seconds(5));
         try
         {
             static int sum = 0;
@@ -109,9 +100,6 @@ void ProcessB::notifyAll()
 
 void ProcessB::runProcessB(msgQueue& queue)
 {
-    std::thread t1(&ProcessB::taskBReceive, this, std::ref(queue));
-    std::thread t2(&ProcessB::taskBSend, this, std::ref(queue));
-
-    t1.join();
-    t2.join();
+    t1 = std::thread(&ProcessB::taskBReceive, this, std::ref(queue));
+    t2 = std::thread(&ProcessB::taskBSend, this, std::ref(queue));
 }

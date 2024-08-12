@@ -22,6 +22,18 @@ public:
     ~ProcessA()
     {
         setTerminationFlag();
+
+        if (t1.joinable())
+        {
+            std::cout << "t1 of processA joined" << std::endl;
+            t1.join();
+        }
+
+        if (t2.joinable())
+        {
+            std::cout << "t2 of processA joined" << std::endl;
+            t2.join();
+        }
     }
 
     /**
@@ -51,6 +63,9 @@ private:
      */
     void taskAReceive(msgQueue& queue);
 
+    std::thread t1;
+    std::thread t2;
+
     std::atomic<bool> terminationFlag = false;
 };
 
@@ -65,6 +80,18 @@ public:
     ~ProcessB()
     {
         setTerminationFlag();
+
+        if (t1.joinable())
+        {
+            std::cout << "t1 of processB joined" << std::endl;
+            t1.join();
+        }
+
+        if (t2.joinable())
+        {
+            std::cout << "t2 of processB joined" << std::endl;
+            t2.join();
+        }
     }
 
     /**
@@ -95,11 +122,19 @@ public:
         return isTaskDone;
     }
 
+    /**
+     * @brief Set the Termination Flag, used for task termination.
+     * 
+     */
     void setTerminationFlag()
     {
         terminationFlag = true;
     }
 
+    /**
+     * @brief Notifies task.
+     * 
+     */
     void notifyAll();
 
 private:
@@ -116,6 +151,9 @@ private:
      * @param queue Message queue for IPC.
      */
     void taskBReceive(msgQueue& queue);
+
+    std::thread t1;
+    std::thread t2;
 
     bool isTaskDone = false;
     std::mutex _mtx;
