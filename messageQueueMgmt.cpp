@@ -4,6 +4,7 @@
 
 void msgQueue::send(Message& message)
 {
+    std::lock_guard<std::mutex> lock(_writemtx);
     if (-1 != msgsnd(_msgid, &message, sizeof(message), 0))
     {
         //Debug info
@@ -17,6 +18,7 @@ void msgQueue::send(Message& message)
 
 Message msgQueue::receive(long type)
 {
+    std::lock_guard<std::mutex> lock(_readmtx);
     Message message;
 
     if (-1 != msgrcv(_msgid, &message, sizeof(message), type, 0))

@@ -15,6 +15,9 @@ cmake --build .
 To run code execute `./GP_Task`.
 To exit press `Enter`.
 
+## messageQueue
+Mutexes are added to the message queue for thread safety in a hypothetical expansion of the code where multiple threads would access the read/write methods. For this particular case, they are not needed.
+
 ## Memory leaks check 
 
 Valgrind output

@@ -5,8 +5,6 @@
 #include <mutex>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <semaphore.h>
-#include <fcntl.h>
 
 struct Message
 {
@@ -71,6 +69,9 @@ private:
 
     key_t _key;
     int _msgid;
+
+    std::mutex _writemtx;
+    std::mutex _readmtx;
 
     std::string const _queueName = "GPqueue.txt";
 };
